@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from hashlib import sha256
 from glob import glob 
 
@@ -22,6 +23,19 @@ def sumToJson(fname, endDict):
     data = {fp.name: csum}
     fp.close()
     endDict.update(data)
+
+def getVersion(dirname):
+    versionfile = dirname + '/wp-includes/version.php'
+    try:
+        f = open(versionfile, 'r')
+        for line in f:
+            if line.startswith("$wp_version"):
+                ver = line.split("=")[1].strip();
+                version = re.sub("[';]", '', ver)
+                print(version)
+                break
+    except FileNotFoundError:
+        quit('File wp-includes/version.php doesn\'t exist!')
 
 def RecursiveSearch(dirname, dDic):
     tmpDirs = []
@@ -91,6 +105,7 @@ if __name__ == '__main__':
         actDir = input("Input the directory name to start: ")
         dDic = {}
         RecursiveSearch(actDir, dDic)
+        getVersion(actDir)
         if dDic:
             nameFile = input("Input the name of the resulting JSON file: ")
             createJson(dDic, nameFile)
