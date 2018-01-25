@@ -107,7 +107,9 @@ if __name__ == '__main__':
         RecursiveSearch(actDir, dDic)
         version = getVersion(actDir)
         if dDic:
-            nameFile = input("Input the name of the resulting JSON file: ")
+            nameFile = input("Input the name of the resulting JSON file (default: sums_version.json): ")
+            if(nameFile == ""):
+                nameFile = 'sums_'+version+'.json'
             createJson(dDic, nameFile, version)
     else:
         exit('Bad input.')
