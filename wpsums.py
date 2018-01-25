@@ -11,7 +11,7 @@ from glob import glob
 
 def sumToJson(fname, endDict):
     try:
-        fp = open(fname, 'r')
+        fp = open(fname, 'rb')
     except PermissionError:
         print('Permission error in %s' % fname)
         pass
@@ -19,7 +19,7 @@ def sumToJson(fname, endDict):
         print('File not found: %s' % fname)
         pass
 
-    csum = sha1(fp.read().encode('utf-8')).hexdigest()
+    csum = sha1(fp.read()).hexdigest()
     data = {fp.name: csum}
     fp.close()
     endDict.update(data)
