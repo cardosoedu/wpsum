@@ -1,6 +1,4 @@
-import os
-import json
-import re
+import os, json, re, urllib.request
 from hashlib import sha1
 from glob import glob 
 
@@ -53,9 +51,14 @@ def RecursiveSearch(dirname, dDic):
     else:
         exit('%s is not a directory.' % dirname)
 
-def compareSums(originalSums, newSums):
+def compareSums(newSums, originalSums, fromWeb):
+    if fromWeb:
+        req = urllib.request.urlopen("https://github.com/cardosoedu/wpsum/blob/master/sums/{}", originalSums)
+        loadOriginal = json.loads(req.read().decode())
+    else:
+        loadOriginal = json.load(originalSums)
+
     loadNew = json.load(newSums)
-    loadOriginal = json.load(originalSums)
     if loadNew == loadOriginal:
         print('Everything good.')
     else:
@@ -96,7 +99,7 @@ if __name__ == '__main__':
             file2 = input('Input the name of the second sums file: ')
             fp1 = open(file1, 'r')
             fp2 = open(file2, 'r')
-            compareSums(fp1, fp2)
+            compareSums(fp2, fp1, False)
             fp1.close()
             fp2.close()
         else:
