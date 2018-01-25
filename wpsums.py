@@ -1,12 +1,12 @@
 import os
 import json
 import re
-from hashlib import sha256
+from hashlib import sha1
 from glob import glob 
 
 # Get wordpress version
 # Search for every php and js file excluding the wp-content directory
-# Save the sha256sum of these files in json format (name file, sum)
+# Save the sha1sum of these files in json format (name file, sum)
 # Compare the file with the file with sums of the original wordpress version
 
 def sumToJson(fname, endDict):
@@ -19,7 +19,7 @@ def sumToJson(fname, endDict):
         print('File not found: %s' % fname)
         pass
 
-    csum = sha256(fp.read().encode('utf-8')).hexdigest()
+    csum = sha1(fp.read().encode('utf-8')).hexdigest()
     data = {fp.name: csum}
     fp.close()
     endDict.update(data)
@@ -32,7 +32,7 @@ def getVersion(dirname):
             if line.startswith("$wp_version"):
                 ver = line.split("=")[1].strip();
                 version = re.sub("[';]", '', ver)
-                print(version)
+                return version
                 break
     except FileNotFoundError:
         quit('File wp-includes/version.php doesn\'t exist!')
@@ -70,14 +70,14 @@ def compareSums(originalSums, newSums):
     	else:
     		exit('The versions don\'t match.')
 
-def createJson(baseDic, fname):
+def createJson(baseDic, fname, version):
     if not baseDic:
         print('Nothing to dump...')
         exit()
     if os.path.exists(fname):
         print('File already exists...')
         exit()
-    finalDic = {"Wordpress": {"Version": 4.9, "Checksums": [{key:value} for key,value in baseDic.items()]}}
+    finalDic = {"Wordpress": {"Version": version, "Checksums": [{key:value} for key,value in baseDic.items()]}}
 
     fp = open(fname, 'w')
     if json.dump(finalDic, fp):
@@ -105,9 +105,9 @@ if __name__ == '__main__':
         actDir = input("Input the directory name to start: ")
         dDic = {}
         RecursiveSearch(actDir, dDic)
-        getVersion(actDir)
+        version = getVersion(actDir)
         if dDic:
             nameFile = input("Input the name of the resulting JSON file: ")
-            createJson(dDic, nameFile)
+            createJson(dDic, nameFile, version)
     else:
         exit('Bad input.')
