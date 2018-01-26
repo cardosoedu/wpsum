@@ -53,11 +53,12 @@ def RecursiveSearch(dirname, dDic):
 
 def compareSums(newSums, originalSums, fromWeb):
     if fromWeb:
-        req = urllib.request.urlopen("https://github.com/cardosoedu/wpsum/blob/master/sums/{}", originalSums)
+        url = "https://raw.githubusercontent.com/cardosoedu/wpsum/master/sums/sums_{}.json".format(originalSums)
+        req = urllib.request.urlopen(url)
         loadOriginal = json.loads(req.read().decode())
     else:
         loadOriginal = json.load(originalSums)
-
+    
     loadNew = json.load(newSums)
     if loadNew == loadOriginal:
         print('Everything good.')
@@ -69,7 +70,7 @@ def compareSums(newSums, originalSums, fromWeb):
 
     		for a, b in zip(loadNew, loadOriginal):
     			if(a!=b):
-    				print("* Difference found in:\n{}\n{}\n".format(a, b))
+                            print("* Difference found in:\n> Your Wordpress Hash: {}\n> Original Wordpress Hash: {}\n".format(a, b))
     	else:
     		exit('The versions don\'t match.')
 
@@ -89,30 +90,57 @@ def createJson(baseDic, fname, version):
 
 if __name__ == '__main__':
     print("*** WordPress CheckSum ***")
-    createFile = input("Do you want to make a new sums file? (y\\n): ")
-    if(createFile == 'n'):
-        compare = input("Do you want to compare two files? (y\\n): ")
-        if(compare == 'n'):
-            exit('There\'s not much to do, then.\n')
-        elif(compare == 'y'):
-            file1 = input('Input the name of the first sums file: ')
-            file2 = input('Input the name of the second sums file: ')
-            fp1 = open(file1, 'r')
-            fp2 = open(file2, 'r')
-            compareSums(fp2, fp1, False)
-            fp1.close()
-            fp2.close()
+    auto = input("Run on auto-mode? y/n (default: y): ")
+    if auto == 'y' or auto == '':
+        print("Autorun assumes that you're in the Wordpress directory.")
+        dDict = {}
+        RecursiveSearch('./', dDict)
+        print("Searching files...")
+        version = getVersion('./')
+        print("Getting your Wordpress version.")
+        nameFile = 'newsums_'+version+'.json'
+        if dDict:
+            print("Creating JSON...")
+            createJson(dDict, nameFile, version)
+            pFileNew = open(nameFile, 'r')
+            print("Checking the integrity of your Wordpress core files.\nComparing against the original Wordpress {} core files.".format(version))
+            compareSums(pFileNew, version, True)
+        else:
+            exit('Something went wrong.')
+    elif auto == 'n':
+        createFile = input("Do you want to make a new sums file? (y\\n): ")
+        if(createFile == 'n'):
+            compare = input("Do you want to compare two files? (y\\n): ")
+            if(compare == 'n'):
+                exit('There\'s not much to do, then.\n')
+            elif(compare == 'y'):
+                file1 = input('Input the name of the first sums file: ')
+                file2 = input('Input the name of the second sums file: ')
+                try:
+                    fp1 = open(file1, 'r')
+                except FileNotFoundError:
+                    exit('File not found.')
+                else:
+                    try:
+                        fp2 = open(file2, 'r')
+                    except FileNotFoundError:
+                        exit('File not found.')
+                    compareSums(fp2, fp1, False)
+                    fp1.close()
+                    fp2.close()
+            else:
+                exit('Bad input.')
+        elif(createFile == 'y'):
+            actDir = input("Input the directory name to start: ")
+            dDic = {}
+            RecursiveSearch(actDir, dDic)
+            version = getVersion(actDir)
+            if dDic:
+                nameFile = input("Input the name of the resulting JSON file (default: sums_version.json): ")
+                if(nameFile == ""):
+                    nameFile = 'sums_'+version+'.json'
+                createJson(dDic, nameFile, version)
         else:
             exit('Bad input.')
-    elif(createFile == 'y'):
-        actDir = input("Input the directory name to start: ")
-        dDic = {}
-        RecursiveSearch(actDir, dDic)
-        version = getVersion(actDir)
-        if dDic:
-            nameFile = input("Input the name of the resulting JSON file (default: sums_version.json): ")
-            if(nameFile == ""):
-                nameFile = 'sums_'+version+'.json'
-            createJson(dDic, nameFile, version)
     else:
         exit('Bad input.')
