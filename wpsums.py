@@ -53,9 +53,13 @@ def RecursiveSearch(dirname, dDic):
 
 def compareSums(newSums, originalSums, fromWeb):
     if fromWeb:
-        url = "https://raw.githubusercontent.com/cardosoedu/wpsum/master/sums/sums_{}.json".format(originalSums)
-        req = urllib.request.urlopen(url)
-        loadOriginal = json.loads(req.read().decode())
+        try:
+            url = "https://raw.githubusercontent.com/cardosoedu/wpsum/master/sums/sums_{}.json".format(originalSums)
+        except urllib.HTTPError:
+            exit("Unsupported version.")
+        else:
+            req = urllib.request.urlopen(url)
+            loadOriginal = json.loads(req.read().decode())
     else:
         loadOriginal = json.load(originalSums)
     
@@ -130,9 +134,11 @@ if __name__ == '__main__':
                     fp2.close()
             else:
                 exit('Bad input.')
-        elif(createFile == 'y'):
-            actDir = input("Input the directory name to start: ")
+        elif(createFile == 'y' or createFile == ''):
+            actDir = input("Input the directory name to start (default current directory): ")
             dDic = {}
+            if actDir == '':
+                actDir = './'
             RecursiveSearch(actDir, dDic)
             version = getVersion(actDir)
             if dDic:
