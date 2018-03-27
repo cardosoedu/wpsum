@@ -51,32 +51,67 @@ def RecursiveSearch(dirname, dDic):
     else:
         exit('%s is not a directory.' % dirname)
 
-def compareSums(newSums, originalSums, fromWeb):
+# function compareSums(newSums, originalSums, fromWeb)
+# @newSums          :   the new hashes file
+# @originalSums     :   the original hashes file, like: sums_versionName.json
+# @fromWeb          :   specifies if the script is going to download the hash from my repository
+#
+# This function will take two hash files and compare the two, returning if there's a difference.
+
+def compareSums(newSums, originalSums, fromWeb = False):
+    # Check if we're going to take the file from the repository
     if fromWeb:
         try:
             url = "https://raw.githubusercontent.com/cardosoedu/wpsum/master/sums/sums_{}.json".format(originalSums)
         except urllib.HTTPError:
+            # The error most tipically is going to be because there's not a hash file available for that version
             exit("Unsupported version.")
-        else:
-            req = urllib.request.urlopen(url)
-            loadOriginal = json.loads(req.read().decode())
+        finally:
+            exit("Unknown error.")
+        print("Downloading the hashes file from {}...".format(url))
+        req = urllib.request.urlopen(url)
+        loadOriginal = json.loads(req.read().decode())
     else:
+        # If we are not downloading the file, then it should be provided by the user
         loadOriginal = json.load(originalSums)
-    
-    loadNew = json.load(newSums)
-    if loadNew == loadOriginal:
-        print('Everything good.')
-    else:
-    	print('Something is wrong...')
-    	if(loadNew['Wordpress']['Version'] == loadOriginal['Wordpress']['Version']):
-    		loadNew = sorted([repr(x) for x in loadNew['Wordpress']['Checksums']])
-    		loadOriginal = sorted([repr(x) for x in loadOriginal['Wordpress']['Checksums']])
 
-    		for a, b in zip(loadNew, loadOriginal):
-    			if(a!=b):
-                            print("* Difference found in:\n> Your Wordpress Hash: {}\n> Original Wordpress Hash: {}\n".format(a, b))
-    	else:
-    		exit('The versions don\'t match.')
+    # Now we can load the @newSums file
+    loadNew = json.load(newSums)
+    # If both files are the "same", then there's nothing to do.
+    if loadNew == loadOriginal:
+        exit('Everything good!')
+    else:
+        print('Something is wrong...')
+        # If the @newSums version is different than the @originalSums, there's nothing to do.
+        if(loadNew['Wordpress']['Version'] != loadOriginal['Wordpress']['Version']):
+            exit("Versions do not match.")
+        else:
+            # loadNew becomes a list of the dictionaries in Wordpress:Checksums of the @newSums
+            loadNew = sorted([repr(x) for x in loadNew['Wordpress']['Checksums']])
+            # loadOriginal becomes a list of dictionaries in Wordpress:Checksums of the @originalSums
+            loadOriginal = sorted([repr(x) for x in loadOriginal['Wordpress']['Checksums']])
+            # Now we check if there's any item that is in the @newSums but not in @originalSums
+            filesNotThere = sorted([x for x in loadNew if x not in loadOriginal])
+            # And we cut out the files that are not there in both lists
+            trimOriginals = sorted([repr(x) for x in loadOriginal if x in loadNew])
+            trimNew = sorted([repr(x) for x in loadNew if x in loadOriginal])
+
+            # If there's any item that isnt in the @originalSums, print it out
+            if(len(filesNotThere) > 0):
+                print("**** Files not in the original Hashes file: ")
+                for fl in filesNotThere:
+                    print(fl)
+
+            # Create a pair with both lists so we can quickly check them.
+            # There shouldnt be any errors here and the only differences that could be shown
+            # are the ones where the hash is different.
+            pairs = zip(trimNew, trimOriginals)
+            for x, y in pairs:
+                if(x != y):
+                    print("Files do not match: ")
+                    print("*** Your file: %s" % x)
+                    print("Original file: %s" % y)
+            print("-------------")
 
 def createJson(baseDic, fname, version):
     if not baseDic:
